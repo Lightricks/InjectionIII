@@ -1,0 +1,40 @@
+name: Build
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    name: Create iOS simulator injection bundle
+    runs-on: macos-12
+
+    steps:
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1.4.0
+      with:
+        xcode-version: '13.4.1'
+
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with: 
+        submodules: 'recursive'
+
+
+    - name: Build
+      run: |-
+        set -o pipefail
+        mkdir output
+        xcodebuild -project InjectionIII.xcodeproj -scheme InjectionIII -derivedDataPath output/ 2>&1 | tee output/build_log.txt
+
+    - name: Upload bundle
+      uses: actions/upload-artifact@v2
+      with:
+        name: iOSInjection.bundle
+        path: output/Build/Products/Release-iphonesimulator/iOSInjection.bundle
+
+    - name: Upload logs
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: logs
+        path: output/build_log.txt
+
