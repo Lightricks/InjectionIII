@@ -49,11 +49,6 @@ build_bundle tvOS AppleTVSimulator appletvsimulator &&
 # iphoneos on M1 mac (requires Sandbox switched off)
 #build_bundle maciOS iPhoneOS iphoneos &&
 
-# macOSSwiftUISupport needs to be built separately from the main app
-"$DEVELOPER_BIN_DIR"/xcodebuild SYMROOT=$SYMROOT ARCHS="$ARCHS" -sdk macosx -config $CONFIGURATION -target SwiftUISupport &&
-
-rsync -au $SYMROOT/$CONFIGURATION/macOSSwiftUISupport.bundle "$CODESIGNING_FOLDER_PATH/Contents/Resources" &&
-
 # Copy across bundles and .swiftinterface files
 rsync -au $SYMROOT/$CONFIGURATION/SwiftTrace.framework/Versions/A/{Headers,Modules} "$CODESIGNING_FOLDER_PATH/Contents/Resources/macOSInjection.bundle/Contents/Frameworks/SwiftTrace.framework/Versions/A" &&
 
