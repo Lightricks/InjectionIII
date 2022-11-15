@@ -23,13 +23,15 @@ jobs:
       run: |-
         set -o pipefail
         mkdir output
-        xcodebuild -project InjectionIII.xcodeproj -scheme InjectionIII -derivedDataPath output/ 2>&1 | tee output/build_log.txt
+        xcodebuild CODE_SIGNING_ALLOWED=NO -project InjectionIII.xcodeproj -scheme InjectionIII -config Release 2>&1 | tee output/build_log.txt
+        injection_app_path=$(xcodebuild -config Release -showBuildSettings | grep "CODESIGNING_FOLDER_PATH" | cut -f2 -d'=' | tr -d ' ')
+        rsync -au "$injection_app_path/Contents/Resources/iOSInjection.bundle" output/ 
 
     - name: Upload bundle
       uses: actions/upload-artifact@v2
       with:
         name: iOSInjection.bundle
-        path: output/Build/Products/Release-iphonesimulator/iOSInjection.bundle
+        path: output/iOSInjection.bundle
 
     - name: Upload logs
       if: ${{ always() }}
