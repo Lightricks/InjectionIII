@@ -26,12 +26,13 @@ jobs:
         xcodebuild CODE_SIGNING_ALLOWED=NO -project InjectionIII.xcodeproj -scheme InjectionIII -config Release 2>&1 | tee output/build_log.txt
         injection_app_path=$(xcodebuild -config Release -showBuildSettings | grep "CODESIGNING_FOLDER_PATH" | cut -f2 -d'=' | tr -d ' ')
         rsync -au "$injection_app_path/Contents/Resources/iOSInjection.bundle" output/ 
+        zip --symlinks -r output/iOSInjection.bundle.zip output/iOSInjection.bundle
 
     - name: Upload bundle
       uses: actions/upload-artifact@v2
       with:
-        name: iOSInjection.bundle
-        path: output/iOSInjection.bundle
+        name: iOSInjection.bundle.zip
+        path: output/iOSInjection.bundle.zip
 
     - name: Upload logs
       if: ${{ always() }}
