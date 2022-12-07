@@ -57,7 +57,10 @@ public class InjectionServer: SimpleSocket {
     }
 
     func validateConnection() -> Bool {
-        return readInt() == INJECTION_SALT && readString() == INJECTION_KEY
+        // Skip client validation.
+        let _ = readInt()
+        let _ = readString()
+        return true
     }
 
     @objc override public func runInBackground() {
