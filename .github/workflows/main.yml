@@ -4,7 +4,7 @@ on: [workflow_dispatch, pull_request]
 
 jobs:
   build:
-    name: Create iOS and iOS simlulator injection bundles
+    name: Build Injection Artifacts
     runs-on: macos-12
 
     steps:
@@ -34,6 +34,9 @@ jobs:
         rsync -au "$injection_app_path/Contents/Resources/simulator/iOSInjection.bundle" output/simulator/
         zip --symlinks -r output/iOSSimulatorInjection.zip output/simulator/iOSInjection.bundle
 
+        rsync -au "$injection_app_path" output/
+        zip --symlinks -r output/InjectionIII.app.zip output/InjectionIII.app
+
     - name: Upload iOS device bundle
       uses: actions/upload-artifact@v2
       with:
@@ -45,6 +48,12 @@ jobs:
       with:
         name: iOSSimulatorInjection.zip
         path: output/iOSSimulatorInjection.zip
+
+    - name: Upload InjectionIII app
+      uses: actions/upload-artifact@v2
+      with:
+        name: InjectionIII.app.zip
+        path: output/InjectionIII.app.zip
 
     - name: Upload logs
       if: ${{ always() }}
