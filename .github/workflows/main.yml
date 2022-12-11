@@ -4,7 +4,7 @@ on: [workflow_dispatch, pull_request]
 
 jobs:
   build:
-    name: Create iOS simulator injection bundle
+    name: Create iOS and iOS simlulator injection bundles
     runs-on: macos-12
 
     steps:
@@ -25,14 +25,26 @@ jobs:
         mkdir output
         xcodebuild CODE_SIGNING_ALLOWED=NO -project InjectionIII.xcodeproj -scheme InjectionIII -config Release 2>&1 | tee output/build_log.txt
         injection_app_path=$(xcodebuild -config Release -showBuildSettings | grep "CODESIGNING_FOLDER_PATH" | cut -f2 -d'=' | tr -d ' ')
-        rsync -au "$injection_app_path/Contents/Resources/iOSInjection.bundle" output/ 
-        zip --symlinks -r output/iOSInjection.bundle.zip output/iOSInjection.bundle
+        
+        mkdir output/device
+        rsync -au "$injection_app_path/Contents/Resources/device/iOSInjection.bundle" output/device/
+        zip --symlinks -r output/iOSDeviceInjection.zip output/device/iOSInjection.bundle
 
-    - name: Upload bundle
+        mkdir output/simulator
+        rsync -au "$injection_app_path/Contents/Resources/simulator/iOSInjection.bundle" output/simulator/
+        zip --symlinks -r output/iOSSimulatorInjection.zip output/simulator/iOSInjection.bundle
+
+    - name: Upload iOS device bundle
       uses: actions/upload-artifact@v2
       with:
-        name: iOSInjection.bundle.zip
-        path: output/iOSInjection.bundle.zip
+        name: iOSDeviceInjection.zip
+        path: output/iOSDeviceInjection.zip
+
+    - name: Upload iOS simulator bundle
+      uses: actions/upload-artifact@v2
+      with:
+        name: iOSSimulatorInjection.zip
+        path: output/iOSSimulatorInjection.zip
 
     - name: Upload logs
       if: ${{ always() }}

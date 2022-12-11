@@ -18,6 +18,7 @@ function build_bundle () {
     FAMILY=$1
     PLATFORM=$2
     SDK=$3
+    SUBFOLDER_NAME=$4
     SWIFT_DYLIBS_PATH="$FIXED_XCODE_DEVELOPER_PATH/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$SDK"
     XCTEST_FRAMEWORK_PATH="$FIXED_XCODE_DEVELOPER_PATH/Platforms/$PLATFORM.platform/Developer/Library/Frameworks"
     BUNDLE_CONFIG=Release
@@ -26,22 +27,23 @@ function build_bundle () {
         echo "Missing RPATH $SWIFT_DYLIBS_PATH $XCTEST_FRAMEWORK_PATH"
         exit 1
     fi
-    "$DEVELOPER_BIN_DIR"/xcodebuild SYMROOT=$SYMROOT ARCHS="$ARCHS" -sdk $SDK -config $BUNDLE_CONFIG -target SwiftTrace &&
-    "$DEVELOPER_BIN_DIR"/xcodebuild SYMROOT=$SYMROOT ARCHS="$ARCHS" $APP_SANDBOXED PRODUCT_NAME="${FAMILY}Injection" LD_RUNPATH_SEARCH_PATHS="$SWIFT_DYLIBS_PATH $XCTEST_FRAMEWORK_PATH @loader_path/Frameworks" -sdk $SDK -config $BUNDLE_CONFIG -target InjectionBundle &&
-    "$DEVELOPER_BIN_DIR"/xcodebuild SYMROOT=$SYMROOT ARCHS="$ARCHS" PRODUCT_NAME="${FAMILY}SwiftUISupport" -sdk $SDK -config $BUNDLE_CONFIG -target SwiftUISupport &&
+    "$DEVELOPER_BIN_DIR"/xcodebuild CODE_SIGNING_ALLOWED=NO SYMROOT=$SYMROOT ARCHS="$ARCHS" -sdk $SDK -config $BUNDLE_CONFIG -target SwiftTrace &&
+    "$DEVELOPER_BIN_DIR"/xcodebuild CODE_SIGNING_ALLOWED=NO SYMROOT=$SYMROOT ARCHS="$ARCHS" $APP_SANDBOXED PRODUCT_NAME="${FAMILY}Injection" LD_RUNPATH_SEARCH_PATHS="$SWIFT_DYLIBS_PATH $XCTEST_FRAMEWORK_PATH @loader_path/Frameworks" -sdk $SDK -config $BUNDLE_CONFIG -target InjectionBundle &&
+    "$DEVELOPER_BIN_DIR"/xcodebuild CODE_SIGNING_ALLOWED=NO SYMROOT=$SYMROOT ARCHS="$ARCHS" PRODUCT_NAME="${FAMILY}SwiftUISupport" -sdk $SDK -config $BUNDLE_CONFIG -target SwiftUISupport &&
 
-    rsync -au $SYMROOT/$BUNDLE_CONFIG-$SDK/*.bundle "$CODESIGNING_FOLDER_PATH/Contents/Resources" &&
-    mkdir -p "$CODESIGNING_FOLDER_PATH/Contents/Resources/${FAMILY}Injection.bundle/Frameworks/SwiftTrace.framework/Versions/A/Resources" &&
-    rsync -au $SYMROOT/$BUNDLE_CONFIG-$SDK/SwiftTrace.framework/{Headers,Modules,SwiftTrace} "$CODESIGNING_FOLDER_PATH/Contents/Resources/${FAMILY}Injection.bundle/Frameworks/SwiftTrace.framework/Versions/A" &&
-    ln -s A "$CODESIGNING_FOLDER_PATH/Contents/Resources/${FAMILY}Injection.bundle/Frameworks/SwiftTrace.framework/Versions/Current"
+    mkdir "$CODESIGNING_FOLDER_PATH/Contents/Resources/$SUBFOLDER_NAME"
+    rsync -au $SYMROOT/$BUNDLE_CONFIG-$SDK/*.bundle "$CODESIGNING_FOLDER_PATH/Contents/Resources/$SUBFOLDER_NAME" &&
+    mkdir -p "$CODESIGNING_FOLDER_PATH/Contents/Resources/$SUBFOLDER_NAME/${FAMILY}Injection.bundle/Frameworks/SwiftTrace.framework/Versions/A/Resources" &&
+    rsync -au $SYMROOT/$BUNDLE_CONFIG-$SDK/SwiftTrace.framework/{Headers,Modules,SwiftTrace} "$CODESIGNING_FOLDER_PATH/Contents/Resources/$SUBFOLDER_NAME/${FAMILY}Injection.bundle/Frameworks/SwiftTrace.framework/Versions/A" &&
+    ln -s A "$CODESIGNING_FOLDER_PATH/Contents/Resources/$SUBFOLDER_NAME/${FAMILY}Injection.bundle/Frameworks/SwiftTrace.framework/Versions/Current"
     for thing in SwiftTrace Modules Resources Headers; do
-        ln -sf Versions/Current/$thing "$CODESIGNING_FOLDER_PATH/Contents/Resources/${FAMILY}Injection.bundle/Frameworks/SwiftTrace.framework"
+        ln -sf Versions/Current/$thing "$CODESIGNING_FOLDER_PATH/Contents/Resources/$SUBFOLDER_NAME/${FAMILY}Injection.bundle/Frameworks/SwiftTrace.framework"
     done
 }
 
 #build_bundle macOS MacOSX macosx &&
-build_bundle iOS iPhoneSimulator iphonesimulator &&
-build_bundle tvOS AppleTVSimulator appletvsimulator &&
+build_bundle iOS iPhoneSimulator iphonesimulator simulator &&
+build_bundle iOS iPhoneOS iphoneos device &&
 
 # iphoneos on M1 mac (requires Sandbox switched off)
 #build_bundle maciOS iPhoneOS iphoneos &&
@@ -54,6 +56,6 @@ for thing in Modules Resources Headers; do
 done &&
 
 # This seems to be a bug producing .swiftinterface files.
-perl -pi.bak -e 's/SwiftTrace.(Swift(Trace|Meta)|dyld_interpose_tuple|rebinding)/$1/g' $CODESIGNING_FOLDER_PATH/Contents/Resources/{macOSInjection.bundle/Contents,{i,maci,tv}OSInjection.bundle}/Frameworks/SwiftTrace.framework/Modules/*/*.swiftinterface &&
-perl -pi.bak -e 's@(import _Concurrency)@// $1@g' $CODESIGNING_FOLDER_PATH/Contents/Resources/{macOSInjection.bundle/Contents,{i,maci,tv}OSInjection.bundle}/Frameworks/SwiftTrace.framework/Modules/*/*.swiftinterface &&
+perl -pi.bak -e 's/SwiftTrace.(Swift(Trace|Meta)|dyld_interpose_tuple|rebinding)/$1/g' $CODESIGNING_FOLDER_PATH/Contents/Resources/{macOSInjection.bundle/Contents,device/iOSInjection.bundle,simulator/iOSInjection}/Frameworks/SwiftTrace.framework/Modules/*/*.swiftinterface &&
+perl -pi.bak -e 's@(import _Concurrency)@// $1@g' $CODESIGNING_FOLDER_PATH/Contents/Resources/{macOSInjection.bundle/Contents,device/iOSInjection.bundle,simulator/iOSInjection.bundle}/Frameworks/SwiftTrace.framework/Modules/*/*.swiftinterface &&
 find $CODESIGNING_FOLDER_PATH/Contents/Resources/*.bundle -name '*.bak' -delete
