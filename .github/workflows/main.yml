@@ -1,0 +1,64 @@
+name: Build
+
+on: [workflow_dispatch, pull_request]
+
+jobs:
+  build:
+    name: Build Injection Artifacts
+    runs-on: macos-12
+
+    steps:
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1.4.0
+      with:
+        xcode-version: '13.4.1'
+
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with: 
+        submodules: 'recursive'
+
+
+    - name: Build
+      run: |-
+        set -o pipefail
+        mkdir output
+        xcodebuild CODE_SIGNING_ALLOWED=NO -project InjectionIII.xcodeproj -scheme InjectionIII -config Release 2>&1 | tee output/build_log.txt
+        injection_app_path=$(xcodebuild -config Release -showBuildSettings | grep "CODESIGNING_FOLDER_PATH" | cut -f2 -d'=' | tr -d ' ')
+        
+        mkdir output/device
+        rsync -au "$injection_app_path/Contents/Resources/device/iOSInjection.bundle" output/device/
+        zip --symlinks -r output/iOSDeviceInjection.zip output/device/iOSInjection.bundle
+
+        mkdir output/simulator
+        rsync -au "$injection_app_path/Contents/Resources/simulator/iOSInjection.bundle" output/simulator/
+        zip --symlinks -r output/iOSSimulatorInjection.zip output/simulator/iOSInjection.bundle
+
+        rsync -au "$injection_app_path" output/
+        zip --symlinks -r output/InjectionIII.app.zip output/InjectionIII.app
+
+    - name: Upload iOS device bundle
+      uses: actions/upload-artifact@v2
+      with:
+        name: iOSDeviceInjection.zip
+        path: output/iOSDeviceInjection.zip
+
+    - name: Upload iOS simulator bundle
+      uses: actions/upload-artifact@v2
+      with:
+        name: iOSSimulatorInjection.zip
+        path: output/iOSSimulatorInjection.zip
+
+    - name: Upload InjectionIII app
+      uses: actions/upload-artifact@v2
+      with:
+        name: InjectionIII.app.zip
+        path: output/InjectionIII.app.zip
+
+    - name: Upload logs
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: logs
+        path: output/build_log.txt
+
