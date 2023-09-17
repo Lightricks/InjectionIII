@@ -6,7 +6,7 @@
 #  Created by John Holdsworth on 04/10/2019.
 #  Copyright © 2019 John Holdsworth. All rights reserved.
 #
-#  $Id: //depot/ResidentEval/InjectionIII/build_bundles.sh#76 $
+#  $Id: //depot/ResidentEval/InjectionIII/build_bundles.sh#77 $
 #
 
 # Injection has to assume a fixed path for Xcode.app as it uses
@@ -42,15 +42,15 @@ function build_bundle () {
     done
 }
 
-# CWE-22 / CVE-2023-26111 with node-static (npm) <= 0.7.11 (not used)
-rm "$CODESIGNING_FOLDER_PATH/Contents/Resources/CodeMirror/package.json" &&
-
 #build_bundle macOS MacOSX macosx &&
 build_bundle iOS iPhoneSimulator iphonesimulator simulator &&
 build_bundle iOS iPhoneOS iphoneos device &&
 
 # iphoneos on M1 mac (requires Sandbox switched off)
 #build_bundle maciOS iPhoneOS iphoneos &&
+
+# CWE-22 / CVE-2023-26111 with node-static (npm) <= 0.7.11 (not used)
+rm "$CODESIGNING_FOLDER_PATH/Contents/Resources/CodeMirror/package.json" &&
 
 # Copy across bundles and .swiftinterface files
 rsync -au $SYMROOT/$CONFIGURATION/SwiftTrace.framework/Versions/A/{Headers,Modules} "$CODESIGNING_FOLDER_PATH/Contents/Resources/macOSInjection.bundle/Contents/Frameworks/SwiftTrace.framework/Versions/A" &&
